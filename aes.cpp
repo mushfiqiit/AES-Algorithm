@@ -4,6 +4,7 @@ typedef bitset<8> byte;
 typedef bitset<32> word;
 
 byte keyInBits[4][4];
+byte plainTextInBits[4][4];
 string keyInEnglish, plainTextInEnglish;
 word w[44];
 
@@ -41,11 +42,58 @@ void calculateKeyInBits()
     }
 }
 
+void calculatePlainTextInBits()
+{
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            plainTextInBits[i][j]=(int)(plainTextInEnglish[i*4+j]);
+            //cout << keyInBits[i][j] << endl;
+        }
+    }
+}
+
+word byteToWord(byte b1, byte b2, byte b3, byte b4)
+{
+    word ans;
+    byte temp;
+    for(int i=0;i<32;i++)
+    {
+        if(i>=0 && i<=7)
+        {
+            temp=b1;
+        }
+
+        else if(i>=8 && i<=15)
+        {
+            temp=b2;
+        }
+
+        else if(i>=16 && i<=23)
+        {
+            temp=b3;
+        }
+
+        else
+        {
+            temp=b4;
+        }
+        if(temp.test(i%8))
+        {
+            ans.set(i);
+        }
+    }
+    return ans;
+}
+
+
 void calculateStateMatrix()
 {
     for(int i=0;i<4;i++)
     {
-
+        stateMatrix[i]=byteToWord(plainTextInBits[i][0], plainTextInBits[i][1],
+                        plainTextInBits[i][2], plainTextInBits[i][3]);
     }
 }
 
@@ -207,7 +255,7 @@ void calculateRoundKey()
     //cout << i << ": " << wordToHex(shiftedW3) << endl;
     word g=g_function(shiftedW3);
     word toAdd=((int)pow(2, i/4 -1)%229);
-    cout << ((int)pow(2, i/4 -1)%229) << endl;
+    //cout << ((int)pow(2, i/4 -1)%229) << endl;
     g^=toAdd;
     //cout << "g " << wordToHex(g) << endl;
     w[i]=w[i-4]^g;
@@ -217,13 +265,35 @@ void calculateRoundKey()
     }
 }
 
+void addRoundKey(int roundNumber)
+{
+    for(int i=0;i<4;i++)
+    {
+        stateMatrix[i]=stateMatrix[i]^w[4*roundNumber+i];
+    }
+}
+
+void printStateMatrix()
+{
+    for(int i=0;i<4;i++)
+    {
+        cout << wordToHex(stateMatrix[i]) << endl;
+    }
+}
+
+
+
 int main()
 {
     keyInEnglish="Thats my Kung Fu";
     plainTextInEnglish="Two One Nine Two";
     calculateKeyInBits();
+    calculatePlainTextInBits();
     formSubkeys();
     calculateRoundKey();
-    printKey();
+    calculateStateMatrix();
+    addRoundKey(0);
+    printStateMatrix();
+    //printKey();
 }
 
