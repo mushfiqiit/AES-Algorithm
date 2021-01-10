@@ -7,6 +7,8 @@ byte keyInBits[4][4];
 string keyInEnglish, plainTextInEnglish;
 word w[44];
 
+word stateMatrix[4];
+
 
 byte S_Box[16][16] = {
     {0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76},
@@ -36,6 +38,14 @@ void calculateKeyInBits()
             keyInBits[i][j]=(int)(keyInEnglish[i*4+j]);
             //cout << keyInBits[i][j] << endl;
         }
+    }
+}
+
+void calculateStateMatrix()
+{
+    for(int i=0;i<4;i++)
+    {
+
     }
 }
 
@@ -125,22 +135,9 @@ string wordToHex(word s)
 
 void printKey()
 {
-    for(int i=0;i<4;i++)
+    for(int i=0;i<44;i++)
     {
-        cout << "w[" << i << "] : ";
-        for(int j=0;j<32;j=j+8)
-        {
-            byte temp;
-            for(int k=j;k<j+8;k++)
-            {
-                if(w[i].test(k))
-                {
-                    temp.set(k%8);
-                }
-            }
-            cout << byteToHex(temp) << " ";
-        }
-        cout << "\n";
+        cout << "w[" << i << "] :" << wordToHex(w[i]) << endl;
     }
 }
 
@@ -153,13 +150,14 @@ int hexToInt(char ch)
 
     else
     {
-        return (9+(int)(ch-'A'));
+        return (10+(int)(ch-'A'));
     }
 }
 
 word g_function(word s)
 {
     string h=wordToHex(s);
+    //cout << h << endl;
     word ans;
     int ac=0;
     for(int i=0;i<h.length();i=i+2)
@@ -167,16 +165,28 @@ word g_function(word s)
         int x, y;
         x=hexToInt(h[i]);
         y=hexToInt(h[i+1]);
+        //cout << x << " " << y << endl;
         byte temp=S_Box[x][y];
-
+        //cout << temp << endl;
+        for(int j=0;j<8;j++)
+        {
+            if(temp.test(j))
+            {
+                ans.set(ac);
+            }
+            ac++;
+        }
+        //cout << ans << endl;
     }
+    return ans;
 }
 
 void calculateRoundKey()
 {
+    for(int i=4;i<44;i=i+4) {
     byte temp;
     word shiftedW3;
-    shiftedW3=w[3];
+    shiftedW3=w[i-1];
     for(int i=0;i<8;i++)
     {
         if(shiftedW3.test(i))
@@ -194,8 +204,17 @@ void calculateRoundKey()
             shiftedW3.set(i+24);
         }
     }
-    //cout << wordToHex(shiftedW3) << endl;
+    //cout << i << ": " << wordToHex(shiftedW3) << endl;
     word g=g_function(shiftedW3);
+    word toAdd=((int)pow(2, i/4 -1)%229);
+    cout << ((int)pow(2, i/4 -1)%229) << endl;
+    g^=toAdd;
+    //cout << "g " << wordToHex(g) << endl;
+    w[i]=w[i-4]^g;
+    w[i+1]=w[i]^w[i-3];
+    w[i+2]=w[i+1]^w[i-2];
+    w[i+3]=w[i+2]^w[i-1];
+    }
 }
 
 int main()
@@ -205,5 +224,6 @@ int main()
     calculateKeyInBits();
     formSubkeys();
     calculateRoundKey();
+    printKey();
 }
 
