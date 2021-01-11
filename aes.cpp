@@ -202,6 +202,20 @@ int hexToInt(char ch)
     }
 }
 
+byte wordToByte(word s, int l)
+{
+    byte temp;
+    for(int i=l*8;i<8*l+8;i++)
+    {
+        if(s.test(i))
+        {
+            temp.set(i%8);
+        }
+    }
+    //cout << byteToHex(temp) << " " << l << " " << wordToHex(s) << endl;
+    return temp;
+}
+
 word g_function(word s)
 {
     string h=wordToHex(s);
@@ -227,6 +241,30 @@ word g_function(word s)
         //cout << ans << endl;
     }
     return ans;
+}
+
+word leftShift(word s, int steps)
+{
+    steps=steps%4;
+    word temp;
+
+    for(int i=0;i<steps*8;i++)
+    {
+        if(s.test(i))
+        {
+            temp.set(i);
+        }
+    }
+    s>>=8*steps;
+
+    for(int i=0;i<steps*8;i++)
+    {
+        if(temp.test(i))
+        {
+            s.set(i+(32-steps*8));
+        }
+    }
+    return s;
 }
 
 void calculateRoundKey()
@@ -281,7 +319,38 @@ void printStateMatrix()
     }
 }
 
+void substitutionBytes(int roundNumber)
+{
+    for(int i=0;i<4;i++)
+    {
+        stateMatrix[i]=g_function(stateMatrix[i]);
+    }
+}
 
+void shiftRow(int roundNumber)
+{
+    word r[4];
+
+    for(int i=0;i<4;i++)
+    {
+        r[i]=byteToWord(wordToByte(stateMatrix[0], i), wordToByte(stateMatrix[1], i),
+                        wordToByte(stateMatrix[2], i), wordToByte(stateMatrix[3], i));
+        //cout << wordToHex(r[i]) << endl;
+    }
+
+    for(int i=0;i<4;i++)
+    {
+        r[i]=leftShift(r[i], i);
+        //cout << wordToHex(r[i]) << endl;
+    }
+
+    for(int i=0;i<4;i++)
+    {
+        stateMatrix[i]=byteToWord(wordToByte(r[0], i), wordToByte(r[1], i),
+                        wordToByte(r[2], i), wordToByte(r[3], i));
+        //cout << wordToHex(stateMatrix[i]) << endl;
+    }
+}
 
 int main()
 {
@@ -293,7 +362,12 @@ int main()
     calculateRoundKey();
     calculateStateMatrix();
     addRoundKey(0);
+    //printStateMatrix();
+    substitutionBytes(1);
+    //printStateMatrix();
+    shiftRow(1);
     printStateMatrix();
+
     //printKey();
 }
 
